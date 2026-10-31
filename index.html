@@ -48,6 +48,9 @@ h1{margin:4px 0 0;font-size:clamp(30px,8vw,48px);line-height:1.1;font-weight:900
 .sound{flex:none;border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:700;min-height:40px}
 .sound[aria-pressed="false"]{color:var(--muted)}
 .hero{margin:4px auto 0;width:min(100%,460px)}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:4px 0 6px;border-radius:14px;background:var(--surface);border:1.5px solid var(--line)}
+.modes button{min-height:48px;border:0;border-radius:10px;background:none;font-weight:900;font-size:17px;color:var(--muted)}
+.modes button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .pick-title{margin:8px 0 2px;font-size:15px;font-weight:700;color:var(--muted)}
 .durations{list-style:none;margin:0;padding:0;border-top:1.5px solid var(--ink)}
 .durations li{border-bottom:1px solid var(--line)}
@@ -67,6 +70,13 @@ h1{margin:4px 0 0;font-size:clamp(30px,8vw,48px);line-height:1.1;font-weight:900
   .home .pick{grid-column:2;grid-row:1 / span 2}
   .hero{width:100%;max-width:520px;margin-left:0}
 }
+/* 銀髮版：文字放大、說明改用主文字色 */
+:root[data-mode="senior"] .dur .d{font-size:16px}
+:root[data-mode="senior"] .dur .d b{font-size:18px}
+:root[data-mode="senior"] .note{font-size:15.5px;color:var(--ink)}
+:root[data-mode="senior"] .cue{font-size:19px;color:var(--ink)}
+:root[data-mode="senior"] .next{font-size:18px}
+:root[data-mode="senior"] .controls button{min-height:64px;font-size:19px}
 
 /* ---------- 運動中 ---------- */
 #run{--ph:var(--work);display:flex;flex-direction:column;gap:6px}
@@ -124,22 +134,20 @@ h1{margin:4px 0 0;font-size:clamp(30px,8vw,48px);line-height:1.1;font-weight:900
     <div class="top">
       <div>
         <h1>核心燃脂計時</h1>
-        <p class="lede">選一個時間，跟著畫面上的人一起動。</p>
+        <p class="lede" id="ledeEl">選一個時間，跟著畫面上的人一起動。</p>
       </div>
       <button class="sound" type="button" aria-pressed="true">聲音：開</button>
     </div>
-    <div class="hero"><svg id="heroSvg" viewBox="0 0 360 270" aria-label="開合跳示範動畫" role="img"></svg></div>
+    <div class="hero"><svg id="heroSvg" viewBox="0 0 360 270" aria-label="示範動畫" role="img"></svg></div>
   </div>
   <div class="pick">
+    <div class="modes" role="group" aria-label="版本">
+      <button type="button" data-mode="normal" aria-pressed="true">一般版</button>
+      <button type="button" data-mode="senior" aria-pressed="false">銀髮版</button>
+    </div>
     <p class="pick-title">要運動多久？</p>
-    <ul class="durations">
-      <li><button class="dur" data-min="2" type="button"><span class="n num">2<small>分鐘</small></span><span class="d"><b>快速動一下</b>4 個動作各 30 秒，不休息</span><span class="go" aria-hidden="true">▶</span></button></li>
-      <li><button class="dur" data-min="5" type="button"><span class="n num">5<small>分鐘</small></span><span class="d"><b>入門</b>5 組，每組運動 40 秒、休息 20 秒</span><span class="go" aria-hidden="true">▶</span></button></li>
-      <li><button class="dur" data-min="10" type="button"><span class="n num">10<small>分鐘</small></span><span class="d"><b>完整一輪</b>10 組，燃脂與核心動作交替</span><span class="go" aria-hidden="true">▶</span></button></li>
-      <li><button class="dur" data-min="20" type="button"><span class="n num">20<small>分鐘</small></span><span class="d"><b>含暖身收操</b>暖身 2 分、16 組、收操 2 分</span><span class="go" aria-hidden="true">▶</span></button></li>
-      <li><button class="dur" data-min="30" type="button"><span class="n num">30<small>分鐘</small></span><span class="d"><b>一整堂課</b>暖身 3 分、24 組、收操 3 分</span><span class="go" aria-hidden="true">▶</span></button></li>
-    </ul>
-    <p class="note">腹部脂肪要靠全身的熱量消耗來減少，單練腹部無法只瘦肚子，所以課表會在燃脂動作與核心動作之間交替。iPhone 請先關閉靜音模式，才聽得到倒數提示音。</p>
+    <ul class="durations" id="durList"></ul>
+    <p class="note" id="noteEl"></p>
   </div>
 </section>
 
@@ -202,6 +210,10 @@ class Figure{
       el("rect",{x:16,y:250,width:328,height:10,rx:5,fill:"var(--mat)"},svg);
       this.fill=el("rect",{x:16,y:250,width:0,height:10,rx:5,fill:"var(--ph, var(--rest))"},svg);
     }
+    // 椅子（側面，椅背在左）：座面上緣 y≈204，對應坐姿基準 SC 的髖部 y=194
+    const ch=el("g",{fill:"none",stroke:"var(--muted)","stroke-width":7,"stroke-linecap":"round",opacity:.6},svg);this.chair=ch;
+    [[112,208,174,208],[116,208,116,248],[170,208,170,248],[116,208,116,138]].forEach(c=>el("line",{x1:c[0],y1:c[1],x2:c[2],y2:c[3]},ch));
+    ch.style.display="none";
     const g=el("g",{},svg);this.g=g;this.p={};this.view=null;this.behind=null;
     const ln=(par,w)=>el("line",{"stroke-linecap":"round","stroke-width":w},par);
     ["far","near"].forEach(s=>{
@@ -225,7 +237,8 @@ class Figure{
       A.upper.setAttribute("stroke",c.skin);A.fore.setAttribute("stroke",c.skin);A.sleeve.setAttribute("stroke",c.shirt);A.hand.setAttribute("fill",c.skin);
     });
   }
-  render(p,view){
+  render(p,view,chair){
+    this.chair.style.display=chair?"":"none";
     const front=view==="front",behind=!!p.behind;
     if(view!==this.view||behind!==this.behind){
       this.view=view;this.behind=behind;this.colorize(front);
@@ -292,6 +305,16 @@ const lr0=P(SUP,{l1:97,l2:97,L1:97,L2:97}),lr1=P(SUP,{l1:178,l2:178,L1:178,L2:17
 const tw0=P(SEAT,P(twNear,{t:202,behind:false}));
 const ssL=P(FR,{t:198,A1:190,A2:212,a1:-12,a2:-8}),ssR=P(FR,{t:162,a1:-190,a2:-212,A1:12,A2:8});
 const brUp=P(FR,{a1:-160,a2:-172,A1:160,A2:172});
+// 銀髮版：坐在椅子上（雙手扶座面前緣），腳踝固定在 (202,244)
+const SC={x:150,y:194,t:180,a1:10,a2:10,A1:10,A2:10,l1:90,l2:0,L1:90,L2:0};
+const ssReach={a1:75,a2:82,A1:75,A2:82};
+const ss1=P(SC,P(ssReach,{x:154,y:192,t:150,l1:88,l2:-5,L1:88,L2:-5}));
+const ss2=P(SC,P(ssReach,{x:176,y:172,t:150,l1:60,l2:-23,L1:60,L2:-23}));
+const ss3=P(ST,{x:192,y:150,t:166,a1:40,a2:55,A1:40,A2:55,l1:28,l2:-16,L1:28,L2:-16});
+const ss4=P(ST,{x:197,y:143,l1:10,l2:-5,L1:10,L2:-5});
+const pg=P(SC,{a1:20,a2:150,A1:20,A2:150});                                  // 出拳預備：拳頭在胸前
+const lb0=P(SC,{a1:20,a2:150,A1:20,A2:150}),lb1=P(lb0,{t:196,a1:36,a2:166,A1:36,A2:166});
+const sl0=P(FR,{a1:-35,a2:-45,A1:35,A2:45});
 
 const ANIMS={
   jacks:{view:"front",dur:.9,f:[[0,FR],[.25,jk1],[.5,P(FR,{y:146,l1:-19,l2:-19,L1:19,L2:19,a1:-155,a2:-172,A1:155,A2:172})],[.75,jk1],[1,FR]]},
@@ -305,7 +328,14 @@ const ANIMS={
   legraise:{view:"side",dur:2.8,f:[[0,lr0],[.45,lr1],[.55,lr1],[1,lr0]]},
   twist:{view:"side",dur:2.4,f:[[0,tw0],[.25,P(SEAT,P(twMid,{t:205,behind:true}))],[.5,P(SEAT,P(twNear,{t:208,behind:true}))],[.75,P(SEAT,P(twMid,{t:205,behind:false}))],[1,tw0]]},
   sidestretch:{view:"front",dur:6,f:[[0,FR],[.15,ssL],[.35,ssL],[.5,FR],[.65,ssR],[.85,ssR],[1,FR]]},
-  breathe:{view:"front",dur:5,f:[[0,FR],[.45,brUp],[.55,brUp],[1,FR]]}
+  breathe:{view:"front",dur:5,f:[[0,FR],[.45,brUp],[.55,brUp],[1,FR]]},
+  // 銀髮版動作；chair:true 會畫出椅子
+  sitstand:{view:"side",chair:true,dur:5,f:[[0,SC],[.1,ss1],[.2,ss2],[.3,ss3],[.38,ss4],[.55,ss4],[.65,ss3],[.75,ss2],[.87,ss1],[1,SC]]},
+  punch:{view:"side",chair:true,dur:1.3,f:[[0,pg],[.25,P(pg,{A1:90,A2:90})],[.5,pg],[.75,P(pg,{a1:90,a2:90})],[1,pg]]},
+  seatknee:{view:"side",chair:true,dur:1.8,f:[[0,SC],[.25,P(SC,{L1:125,L2:10})],[.5,SC],[.75,P(SC,{l1:125,l2:10})],[1,SC]]},
+  legext:{view:"side",chair:true,dur:5,f:[[0,SC],[.18,P(SC,{L2:82})],[.35,P(SC,{L2:82})],[.5,SC],[.68,P(SC,{l2:82})],[.85,P(SC,{l2:82})],[1,SC]]},
+  leanback:{view:"side",chair:true,dur:4.5,f:[[0,lb0],[.35,lb1],[.65,lb1],[1,lb0]]},
+  sideleg:{view:"front",dur:3.4,f:[[0,sl0],[.18,P(sl0,{x:184,l1:-30,l2:-30})],[.35,P(sl0,{x:184,l1:-30,l2:-30})],[.5,sl0],[.68,P(sl0,{x:176,L1:30,L2:30})],[.85,P(sl0,{x:176,L1:30,L2:30})],[1,sl0]]}
 };
 function sample(anim,time){
   const ph=((time/anim.dur)%1+1)%1,f=anim.f;let i=0;
@@ -330,7 +360,13 @@ const EX={
   march:{name:"原地踏步",cue:"放鬆肩膀，抬膝擺手，讓身體慢慢暖起來。"},
   armcircle:{name:"手臂繞環",cue:"手臂伸直，大範圍往前繞圈，活動肩膀。"},
   sidestretch:{name:"站姿側伸展",cue:"一手往上延伸，身體慢慢往側邊彎，左右輪流。"},
-  breathe:{name:"深呼吸",cue:"雙手往上舉時吸氣，放下時吐氣，讓心跳慢慢降下來。"}
+  breathe:{name:"深呼吸",cue:"雙手往上舉時吸氣，放下時吐氣，讓心跳慢慢降下來。"},
+  sitstand:{name:"坐姿起立",cue:"坐在椅子前半部、雙腳踩穩，身體前傾後站起來，再慢慢坐回去。"},
+  punch:{name:"坐姿出拳",cue:"坐直，雙拳放在胸前，左右輪流往前出拳，手肘不要完全打直。"},
+  seatknee:{name:"坐姿抬膝",cue:"雙手扶住椅子，背挺直，左右膝蓋輪流往上抬，像坐著踏步。"},
+  legext:{name:"坐姿伸膝",cue:"坐直，一腳慢慢伸直、停兩秒再放下，左右輪流。"},
+  leanback:{name:"坐姿後傾",cue:"雙手交叉放胸前、收緊肚子，上身慢慢往後靠，快碰到椅背時回到坐直。"},
+  sideleg:{name:"站姿側抬腿",cue:"站直，一腳往側邊抬起再放下，左右輪流。可以一手扶著椅背。"}
 };
 const CIRCUIT=["jacks","crunch","highknees","bicycle","climbers","plank","jacks","legraise","highknees","twist"];
 function buildPlan(min){
@@ -349,6 +385,31 @@ function buildPlan(min){
   if(min===30){push("cool","sidestretch",90);push("cool","breathe",90);}
   return s;
 }
+// 銀髮版：不跳躍、不趴地。奇數位是有氧動作、偶數位是肌力或核心動作
+const SENIOR_CIRCUIT=["march","sitstand","punch","seatknee","sideleg","legext","march","leanback","punch","sitstand"];
+function buildSeniorPlan(min){
+  const s=[],push=(kind,ex,dur)=>s.push({kind,ex,dur});
+  const c={5:{sets:3,warm:30,cool:30},10:{sets:6,warm:60,cool:60},15:{sets:10,warm:60,cool:90},20:{sets:14,warm:60,cool:90}}[min];
+  push("warm","march",c.warm);push("warm","armcircle",c.warm);if(min===20)push("warm","march",60);
+  for(let i=0;i<c.sets;i++){push("work",SENIOR_CIRCUIT[i%SENIOR_CIRCUIT.length],30);push("rest","",30);}
+  push("cool","sidestretch",c.cool);push("cool","breathe",c.cool);
+  s.forEach((g,i)=>{if(g.kind==="rest")g.ex=s[i+1].ex;});  // 休息時預先示範下一個動作
+  return s;
+}
+
+/* ================= 版本（一般／銀髮） ================= */
+const MODES={
+  normal:{
+    lede:"選一個時間，跟著畫面上的人一起動。",hero:"jacks",plan:buildPlan,
+    note:"腹部脂肪要靠全身的熱量消耗來減少，單練腹部無法只瘦肚子，所以課表會在燃脂動作與核心動作之間交替。iPhone 請先關閉靜音模式，才聽得到倒數提示音。",
+    durs:[[2,"快速動一下","4 個動作各 30 秒，不休息"],[5,"入門","5 組，每組運動 40 秒、休息 20 秒"],[10,"完整一輪","10 組，燃脂與核心動作交替"],[20,"含暖身收操","暖身 2 分、16 組、收操 2 分"],[30,"一整堂課","暖身 3 分、24 組、收操 3 分"]]
+  },
+  senior:{
+    lede:"溫和版：不跳躍、不趴地，準備一張椅子就能做。",hero:"sideleg",plan:buildSeniorPlan,
+    note:"請準備一張穩固、沒有輪子的椅子，靠牆放好。每組運動 30 秒、休息 30 秒，動作慢慢做就好，不用追上畫面的速度。如果胸悶、頭暈或關節痛，請立刻停下來休息；有心臟病、高血壓或剛動過手術，請先問過醫師。iPhone 請先關閉靜音模式，才聽得到提示音。",
+    durs:[[5,"輕鬆動一下","暖身 1 分、3 組、收操 1 分"],[10,"入門","暖身 2 分、6 組、收操 2 分"],[15,"完整一輪","暖身 2 分、10 組、收操 3 分"],[20,"一整堂課","暖身 3 分、14 組、收操 3 分"]]
+  }
+};
 
 /* ================= 聲音與螢幕常亮 ================= */
 let actx=null,soundOn=true,wake=null;
@@ -372,14 +433,14 @@ const scr={home:$("home"),run:$("run"),done:$("done")};
 const heroFig=new Figure($("heroSvg"),true),runFig=new Figure($("runSvg"),true),doneFig=new Figure($("doneSvg"),true);
 heroFig.setProgress(1);doneFig.setProgress(1);
 const S={segs:[],i:0,running:false,paused:false,endAt:0,remain:0,minutes:0,lastBeep:null,anim:ANIMS.jacks,speed:1,t:0,suffix:[],total:0,workTotal:0,lastClock:""};
-let current="home",heroT=0,doneT=0;
+let current="home",heroT=0,doneT=0,mode="normal";
 
 function show(name){current=name;Object.keys(scr).forEach(k=>scr[k].hidden=k!==name);window.scrollTo(0,0);}
 const fmt=sec=>{sec=Math.max(0,Math.ceil(sec));const m=Math.floor(sec/60),s=sec%60;return m+":"+String(s).padStart(2,"0");};
 
 function start(min){
   unlockAudio();
-  const plan=buildPlan(min);
+  const plan=MODES[mode].plan(min);
   S.segs=[{kind:"prep",ex:plan[0].ex,dur:5}].concat(plan);
   let n=0;S.segs.forEach(sg=>{if(sg.kind==="work")sg.no=++n;});S.workTotal=n;
   S.suffix=new Array(S.segs.length+1).fill(0);
@@ -393,7 +454,8 @@ function paintSeg(sound){
   const sg=S.segs[S.i],ex=EX[sg.ex];S.lastBeep=null;
   scr.run.dataset.phase=sg.kind;
   $("phaseEl").textContent={prep:"準備",work:"運動",rest:"休息",warm:"暖身",cool:"收操"}[sg.kind];
-  $("setEl").textContent=sg.kind==="work"?"第 "+sg.no+"／"+S.workTotal+" 組":sg.kind==="rest"?"接著第 "+(S.segs[S.i+1]&&S.segs[S.i+1].no||"")+"／"+S.workTotal+" 組":sg.kind==="prep"?"5 秒後開始":"";
+  const nxNo=S.segs[S.i+1]&&S.segs[S.i+1].no;
+  $("setEl").textContent=sg.kind==="work"?"第 "+sg.no+"／"+S.workTotal+" 組":sg.kind==="rest"?(nxNo?"接著第 "+nxNo+"／"+S.workTotal+" 組":"接著收操"):sg.kind==="prep"?"5 秒後開始":"";
   if(sg.kind==="rest"){$("nameEl").textContent="休息一下";$("cueEl").textContent="下一個動作是「"+ex.name+"」："+ex.cue;}
   else if(sg.kind==="prep"){$("nameEl").textContent=ex.name;$("cueEl").textContent="第一個動作，先就定位。"+ex.cue;}
   else{$("nameEl").textContent=ex.name;$("cueEl").textContent=ex.cue;}
@@ -450,13 +512,13 @@ let last=0;
 function frame(now){
   requestAnimationFrame(frame);
   const dt=Math.min(0.1,(now-(last||now))/1000);last=now;
-  if(current==="home"){heroT+=dt;heroFig.render(sample(ANIMS.jacks,heroT),"front");}
+  if(current==="home"){heroT+=dt;const h=ANIMS[MODES[mode].hero];heroFig.render(sample(h,heroT),h.view,h.chair);}
   else if(current==="done"){doneT+=dt;doneFig.render(sample(ANIMS.breathe,doneT),"front");}
   else if(current==="run"&&S.running){
     tick();if(!S.running)return;
     const sg=S.segs[S.i],rem=S.paused?S.remain:Math.max(0,S.endAt-now);
     if(!S.paused)S.t+=dt*S.speed;
-    runFig.render(sample(S.anim,S.t),S.anim.view);
+    runFig.render(sample(S.anim,S.t),S.anim.view,S.anim.chair);
     runFig.setProgress(1-rem/(sg.dur*1000));
     const secs=Math.ceil(rem/1000),txt=secs>=60?fmt(secs):String(secs);
     if(txt!==S.lastClock){S.lastClock=txt;$("clockEl").textContent=txt;$("unitEl").textContent=secs>=60?"":"秒";}
@@ -469,7 +531,30 @@ requestAnimationFrame(frame);
 setInterval(tick,200);
 
 /* ================= 事件 ================= */
-document.querySelectorAll(".dur").forEach(b=>b.addEventListener("click",()=>start(+b.dataset.min)));
+function setMode(m,save){
+  mode=MODES[m]?m:"normal";const M=MODES[mode];
+  document.documentElement.dataset.mode=mode;
+  document.querySelectorAll(".modes button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.mode===mode)));
+  $("ledeEl").textContent=M.lede;$("noteEl").textContent=M.note;
+  const ul=$("durList");ul.innerHTML="";
+  M.durs.forEach(([min,title,desc])=>{
+    const li=document.createElement("li"),b=document.createElement("button");
+    b.className="dur";b.type="button";
+    b.innerHTML='<span class="n num">'+min+'<small>分鐘</small></span><span class="d"><b></b></span><span class="go" aria-hidden="true">▶</span>';
+    b.querySelector("b").textContent=title;b.querySelector(".d").append(desc);
+    b.addEventListener("click",()=>start(min));li.appendChild(b);ul.appendChild(li);
+  });
+  heroT=0;$("heroSvg").setAttribute("aria-label",EX[M.hero].name+"示範動畫");
+  if(save){
+    try{localStorage.setItem("mode",mode);}catch(e){}
+    try{const u=new URL(location.href);if(mode==="senior")u.searchParams.set("mode","senior");else u.searchParams.delete("mode");history.replaceState(null,"",u);}catch(e){}
+  }
+}
+document.querySelectorAll(".modes button").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode,true)));
+// 網址 ?mode=senior 優先（方便直接傳連結給長輩），其次是上次的選擇
+let initMode=null;
+try{initMode=new URLSearchParams(location.search).get("mode")||localStorage.getItem("mode");}catch(e){}
+setMode(initMode||"normal",false);
 const soundBtn=document.querySelector(".sound");
 soundBtn.addEventListener("click",()=>{soundOn=!soundOn;soundBtn.setAttribute("aria-pressed",String(soundOn));soundBtn.textContent="聲音："+(soundOn?"開":"關");if(soundOn){unlockAudio();tone(880,0.12);}});
 $("pauseBtn").addEventListener("click",togglePause);
@@ -484,7 +569,7 @@ document.addEventListener("keydown",e=>{
   else if(e.key==="Escape")endPress();
 });
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&S.running&&!S.paused){wakeOn();tick();}});
-heroFig.render(sample(ANIMS.jacks,0),"front");
+{const h=ANIMS[MODES[mode].hero];heroFig.render(sample(h,0),h.view,h.chair);}
 })();
 </script>
 </body>
